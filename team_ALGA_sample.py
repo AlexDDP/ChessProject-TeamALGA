@@ -9,34 +9,21 @@ import chess
 
 # ── Piece values (centipawns) ─────────────────────────────────────────────────
 PIECE_VALUES = {
-    chess.PAWN:   10,
-    chess.KNIGHT: 20,
-    chess.BISHOP: 20,
-    chess.ROOK:   50,
-    chess.QUEEN:  90,
-    chess.KING:   200,
+    chess.PAWN: 10,chess.KNIGHT: 20, chess.BISHOP: 20,
+    chess.ROOK:50, chess.QUEEN:  90, chess.KING:   200,
 }
 
 
 # Bonuses for pieces attacking the center
 ATTACKING_BONUS = {
-    chess.PAWN: 1.5,
-    chess.KNIGHT: 3.0,
-    chess.BISHOP: 2.5,
-    chess.ROOK: 1.5,
-    chess.QUEEN: 1.0,
-    chess.KING: 0.5,
+    chess.PAWN: 1.5, chess.KNIGHT: 3.0, chess.BISHOP: 2.5,
+    chess.ROOK: 1.5, chess.QUEEN: 1.0,  chess.KING: 0.5,
 }
 
 # Bonuses for the piece occupying the central sqaures
 OCCUPANCY_BONUS = {
-    chess.PAWN: 8.0,
-    chess.KNIGHT: 10.0,
-    chess.BISHOP: 7.0,
-    chess.ROOK: 5.0,
-    chess.QUEEN: 3.0,
-    chess.KING: 0.0,
-
+    chess.PAWN: 8.0, chess.KNIGHT: 10.0, chess.BISHOP: 7.0,
+    chess.ROOK: 5.0, chess.QUEEN: 3.0,   chess.KING: 0.0,
 }
 
 # Reduces move repitition
@@ -46,7 +33,7 @@ def mobility(board):
 
 def material(board):
     score = 0
-    for piece_type, value in PIECE_VALUES.items():
+    for piece_type, value in PIECE_VALUES.map():
         score += len(board.pieces(piece_type, chess.WHITE)) * value
         score -= len(board.pieces(piece_type, chess.BLACK)) * value
     return score

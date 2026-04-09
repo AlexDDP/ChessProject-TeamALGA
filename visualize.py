@@ -570,15 +570,15 @@ def main():
         sys.path.insert(0, script_dir)
 
     try:
-        team_alpha = importlib.import_module("team_alpha")
-        team_beta  = importlib.import_module("team_beta")
+        team_alpha = importlib.import_module("team_ALGA_sample")
+        team_beta  = importlib.import_module("defensive_player")
     except ModuleNotFoundError as e:
         print(f"Error importing bot: {e}")
         print("Make sure team_alpha.py and team_beta.py are in the same folder as visualize.py")
         sys.exit(1)
 
     root = tk.Tk()
-    ColorDrawScreen(root, team_alpha, team_beta, "team_alpha", "team_beta")
+    ColorDrawScreen(root, team_alpha, team_beta, "team_ALGA_sample", "defensive_player")
     root.mainloop()
 
 
