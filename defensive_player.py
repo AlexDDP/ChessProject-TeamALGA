@@ -54,3 +54,31 @@ def evaluate(board):
         score -= mobility_score * 0.1
 
     return score
+
+
+# ── Entry point called by the tournament harness ──────────────────────────────
+def get_next_move(board: chess.Board,
+                  color: chess.Color,
+                  depth: int = 3) -> chess.Move:
+    """
+    Return the best move for `color` from the current `board` position.
+    DO NOT rename or change this signature — the harness calls it directly.
+    """
+    best_move  = None
+    maximizing = (color == chess.WHITE)
+    best_score = float('-inf') if maximizing else float('inf')
+
+    b = board.copy()   # never modify the board passed in
+    for move in b.legal_moves:
+        b.push(move)
+        score = minimax(b, depth - 1,
+                        float('-inf'), float('inf'),
+                        not maximizing)
+        b.pop()
+
+        if maximizing and score > best_score:
+            best_score, best_move = score, move
+        elif not maximizing and score < best_score:
+            best_score, best_move = score, move
+
+    return best_move
