@@ -7,7 +7,7 @@ Install dependency:  pip install python-chess
 
 import chess
 
-# ── Piece values (centipawns) ─────────────────────────────────────────────────
+
 # ── Piece values (centipawns) ─────────────────────────────────────────────────
 PIECE_VALUES = {
     chess.PAWN:   10,
@@ -18,24 +18,66 @@ PIECE_VALUES = {
     chess.KING:   200,
 }
 
+
+# Bonuses for pieces attacing the center
+ATTACKING_BONUS = {
+    chess.PAWN: 1.5,
+    chess.KNIGHT: 3.0,
+    chess.BISHOP: 2.5,
+    chess.ROOK: 1.5,
+    chess.QUEEN: 1.0,
+    chess.KING: 0.5,
+}
+
+# Bonuses for the piece occupying the central sqaures
+OCCUPANCY_BONUS = {
+    chess.PAWN: 8.0,
+    chess.KNIGHT: 10.0,
+    chess.BISHOP: 7.0,
+    chess.ROOK: 5.0,
+    chess.QUEEN: 3.0,
+    chess.KING: 0.0,
+}
+
+
+
 def control_center(board: chess.Board) -> float:
-    """
-    Bonus for controlling the center squares (d4, d5, e4, e5).
-    """
+
+    # Defining central squares
     center_squares = [chess.D4, chess.D5, chess.E4, chess.E5]
-    score = 0
+
+    score = 0.0
+
+
     for square in center_squares:
-        if board.piece_at(square) is not None:  # Check if there's a piece on the center square
-            if board.piece_at(square).color == chess.WHITE:
-                score += 10.0
+
+        # Gets the piece at the current center square
+        piece = board.piece_at(square)
+
+        if piece is not None:
+            # Gives bonus for occupying center
+            if piece.color == chess.WHITE:
+                score += OCCUPANCY_BONUS[piece.piece_type]
             else:
-                score -= 10.0
-        elif board.is_attacked_by(chess.WHITE, square):
-            score += 5.0
+                score -= OCCUPANCY_BONUS[piece.piece_type]
+
+
+        # Gives bonus for pieces attacking center
+
+        for attacker_color, sign in ((chess.WHITE, 1), (chess.BLACK, -1)):
+            for attacker_sq in board.attackers(attacker_color, square):
+                attacker = board.piece_at(attacker_sq)
+                if attacker:
+                    score += sign * ATTACKING_BONUS[attacker.piece_type]
+
     return score
+
 
 # ── Heuristic ─────────────────────────────────────────────────────────────────
 def evaluate(board: chess.Board) -> float:
+
+    # Modified evaluate function which takes cetner control heuristic into account
+
     """
 
     Material:  Sum of piece values for White minus Black.
@@ -49,25 +91,16 @@ def evaluate(board: chess.Board) -> float:
     if board.is_stalemate() or board.is_insufficient_material():
         return 0
 
-    # ── Example Heuristic ─────────────────────────────────────────────────────────
-    # The evaluation function counts the number of pieces White has minus the number
-    # of pieces Black has, multiplied by a value of 1.
-
-    # In the minimax algorithm, this evaluation is applied at the leaf nodes and
-    # reflects the advantage of one player over the other. A positive score means
-    # White is in a better position, while a negative score indicates that Black
-    # is ahead.
-
-    # The algorithm itself does not need to care about the player's colour,
-    # because the evaluation function already represents the position from
-    # both players' perspectives.
-
     score = 0
+
+    
+    # ── Material ─────────────────────────────────────────
     for piece_type, value in PIECE_VALUES.items():
         score += len(board.pieces(piece_type, chess.WHITE)) * value
         score -= len(board.pieces(piece_type, chess.BLACK)) * value
 
-    # Your code goes here
+    # ── Center Control ───────────────────────────────────
+    score += control_center(board)
 
     return score
 
