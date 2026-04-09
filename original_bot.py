@@ -1,8 +1,7 @@
 """
-team_alpha.py  —  Chess Bot using Minimax + Alpha-Beta Pruning
+original_bot.py  —  Chess Bot using Minimax + Alpha-Beta Pruning
 Heuristic: Material value
 
-Install dependency:  pip install python-chess
 """
 
 import chess

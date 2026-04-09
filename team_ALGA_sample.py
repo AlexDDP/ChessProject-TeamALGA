@@ -1,8 +1,7 @@
 """
-team_alpha.py  —  Chess Bot using Minimax + Alpha-Beta Pruning
-Heuristic: Material value
+team_ALGA_sample.py  —  Chess Bot using Minimax + Alpha-Beta Pruning
+Heuristic: Combination of piece values , king safety ,  center control , castling bonuses and piece safety heuristics
 
-Install dependency:  pip install python-chess
 """
 
 import chess
@@ -19,7 +18,7 @@ PIECE_VALUES = {
 }
 
 
-# Bonuses for pieces attacing the center
+# Bonuses for pieces attacking the center
 ATTACKING_BONUS = {
     chess.PAWN: 1.5,
     chess.KNIGHT: 3.0,
@@ -37,8 +36,43 @@ OCCUPANCY_BONUS = {
     chess.ROOK: 5.0,
     chess.QUEEN: 3.0,
     chess.KING: 0.0,
+
 }
 
+# Reduces move repitition
+def mobility(board):
+    return len(list(board.legal_moves))
+
+
+def material(board):
+    score = 0
+    for piece_type, value in PIECE_VALUES.items():
+        score += len(board.pieces(piece_type, chess.WHITE)) * value
+        score -= len(board.pieces(piece_type, chess.BLACK)) * value
+    return score
+
+
+def king_safety(board):
+    score = 0
+
+    for color in [chess.WHITE, chess.BLACK]:
+        king_sq = board.king(color)
+        if king_sq is None:
+            continue
+
+        pawn_shield = 0
+        for sq in chess.SQUARES:
+            piece = board.piece_at(sq)
+            if piece and piece.piece_type == chess.PAWN and piece.color == color:
+                if chess.square_distance(sq, king_sq) <= 2:
+                    pawn_shield += 1
+
+        if color == chess.WHITE:
+            score += pawn_shield * 5
+        else:
+            score -= pawn_shield * 5
+
+    return score
 
 
 def control_center(board: chess.Board) -> float:
@@ -73,34 +107,98 @@ def control_center(board: chess.Board) -> float:
     return score
 
 
+def piece_safety(board):
+    score = 0
+
+    for square in chess.SQUARES:
+        piece = board.piece_at(square)
+        if piece is None:
+            continue
+
+        attackers = board.attackers(not piece.color, square)
+        defenders = board.attackers(piece.color, square)
+
+        if len(attackers) > len(defenders):
+            penalty = PIECE_VALUES[piece.piece_type] * 0.3
+
+            if piece.color == chess.WHITE:
+                score -= penalty
+            else:
+                score += penalty
+
+    return score
+
+
+def hanging_pieces(board):
+    score = 0
+
+    for square in chess.SQUARES:
+        piece = board.piece_at(square)
+        if piece is None or piece.piece_type == chess.KING:
+            continue
+
+        attackers = board.attackers(not piece.color, square)
+        defenders = board.attackers(piece.color, square)
+
+        if attackers and not defenders:
+            penalty = PIECE_VALUES[piece.piece_type] * 0.6
+
+            if piece.color == chess.WHITE:
+                score -= penalty
+            else:
+                score += penalty
+
+    return score
+
+
+def castling_bonus(board):
+    score = 0
+
+    if board.king(chess.WHITE) in [chess.G1, chess.C1]:
+        score += 30
+    if board.king(chess.BLACK) in [chess.G8, chess.C8]:
+        score -= 30
+
+    return score
+
+
 # ── Heuristic ─────────────────────────────────────────────────────────────────
-def evaluate(board: chess.Board) -> float:
+def evaluate(board: chess.Board):
 
-    # Modified evaluate function which takes cetner control heuristic into account
-
-    """
-
-    Material:  Sum of piece values for White minus Black.
-
-    Score > 0  =>  White is better.
-    Score < 0  =>  Black is better.
-    """
     if board.is_checkmate():
-        # The side to move is in checkmate — they lose
         return -99999 if board.turn == chess.WHITE else 99999
-    if board.is_stalemate() or board.is_insufficient_material():
+
+    if (board.is_stalemate() or board.is_insufficient_material() or
+        board.is_repetition(3) or board.is_fifty_moves()):
         return 0
 
     score = 0
 
     
-    # ── Material ─────────────────────────────────────────
     for piece_type, value in PIECE_VALUES.items():
         score += len(board.pieces(piece_type, chess.WHITE)) * value
         score -= len(board.pieces(piece_type, chess.BLACK)) * value
 
-    # ── Center Control ───────────────────────────────────
-    score += control_center(board)
+  
+    score += 0.7 * control_center(board)
+    score += 1.2 * hanging_pieces(board)
+    score += 0.5 * king_safety(board)
+    score += 0.4 * castling_bonus(board)
+    score += 0.5 * piece_safety(board)
+
+    
+    mobility_score = len(list(board.legal_moves))
+    if board.turn == chess.WHITE:
+        score += 0.15 * mobility_score
+    else:
+        score -= 0.15 * mobility_score
+
+   
+    if board.is_check():
+        if board.turn == chess.WHITE:
+            score -= 20   # white is in check
+        else:
+            score += 20   # black is in check
 
     return score
 
