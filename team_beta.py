@@ -1,9 +1,12 @@
-#FINAL TEAM ALGA CHESS ALG
+''''
+FINAL CODE FOR TEAM ALGA CHESS ALGORITHM
+Aryan, Luigi, Grace and Alex
+'''
 
 import chess
+import chess.polyglot
 
-# --- Evaluation Constants ---
-# Material values based on modern chess theory
+#Piece values
 PIECE_VALUES = {
     chess.PAWN: 100,
     chess.KNIGHT: 320,
@@ -13,8 +16,9 @@ PIECE_VALUES = {
     chess.KING: 20000
 }
 
-# --- Piece-Square Tables (PeSTO-inspired, Middlegame) ---
-# These guide pieces to strong squares. Values are from white's perspective.
+#PeSTO PST Tables
+
+#Middlegame/initial
 PST_MG = {
     chess.PAWN: [
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -78,7 +82,7 @@ PST_MG = {
     ]
 }
 
-# --- Endgame Piece-Square Tables ---
+# End game
 PST_EG = {
     chess.PAWN: [
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -155,7 +159,7 @@ BISHOP_PAIR_BONUS = 30
 ROOK_OPEN_FILE = 25
 ROOK_SEMI_OPEN = 12
 MOBILITY_WEIGHT = 3
-PASSED_PAWN_BONUS = [0, 10, 20, 35, 60, 90, 130, 0]  # by rank
+PASSED_PAWN_BONUS = [0, 10, 20, 35, 60, 90, 130, 0]
 DOUBLED_PAWN_PENALTY = 20
 ISOLATED_PAWN_PENALTY = 15
 
@@ -164,8 +168,10 @@ _TT_CACHE = {}
 _TT_MAX_SIZE = 500000
 
 
+#Game phase calculator
+
 def _get_game_phase(board):
-    """Calculate game phase (0-24). Higher = opening/middlegame, lower = endgame."""
+
     phase = 0
     for piece_type, weight in PHASE_WEIGHT.items():
         phase += len(board.pieces(piece_type, chess.WHITE)) * weight
@@ -174,8 +180,7 @@ def _get_game_phase(board):
 
 
 def _pst_value(piece_type, square, color, phase):
-    """Get piece-square table value, interpolated between middlegame and endgame."""
-    sq = square if color == chess.WHITE else (square ^ 56)  # Flip for black
+    sq = square if color == chess.WHITE else (square ^ 56)
 
     if piece_type not in PST_MG or piece_type not in PST_EG:
         return 0
@@ -188,15 +193,10 @@ def _pst_value(piece_type, square, color, phase):
 
 
 def evaluate(board):
-    """
-    Sophisticated evaluation function combining multiple chess heuristics.
-    Returns a score from white's perspective (positive = white better).
-    """
-    # Terminal positions
+
     if board.is_checkmate():
         return -99999 if board.turn == chess.WHITE else 99999
 
-    # Draws
     if board.is_stalemate() or board.is_insufficient_material():
         return 0
     if board.can_claim_draw():
@@ -210,7 +210,6 @@ def evaluate(board):
     score = 0
     phase = _get_game_phase(board)
 
-    # --- Material and Piece-Square Tables ---
     for piece_type in [chess.PAWN, chess.KNIGHT, chess.BISHOP, chess.ROOK, chess.QUEEN, chess.KING]:
         for square in board.pieces(piece_type, chess.WHITE):
             score += PIECE_VALUES[piece_type]
@@ -220,13 +219,13 @@ def evaluate(board):
             score -= PIECE_VALUES[piece_type]
             score -= _pst_value(piece_type, square, chess.BLACK, phase)
 
-    # --- Bishop Pair Bonus ---
+    #Bishop pair bonus
     if len(board.pieces(chess.BISHOP, chess.WHITE)) >= 2:
         score += BISHOP_PAIR_BONUS
     if len(board.pieces(chess.BISHOP, chess.BLACK)) >= 2:
         score -= BISHOP_PAIR_BONUS
 
-    # --- Pawn Structure ---
+    #Pawn structure
     white_pawns = board.pieces(chess.PAWN, chess.WHITE)
     black_pawns = board.pieces(chess.PAWN, chess.BLACK)
 
@@ -277,7 +276,7 @@ def evaluate(board):
         if is_passed:
             score -= PASSED_PAWN_BONUS[7 - rank]
 
-    # --- Rook Placement ---
+    # Rook placement hueristic
     for rook_sq in board.pieces(chess.ROOK, chess.WHITE):
         file = chess.square_file(rook_sq)
         # Open file (no pawns)
@@ -294,7 +293,6 @@ def evaluate(board):
         elif not any(chess.square_file(s) == file for s in black_pawns):
             score -= ROOK_SEMI_OPEN
 
-    # --- Mobility ---
     original_turn = board.turn
 
     board.turn = chess.WHITE
@@ -313,12 +311,9 @@ def evaluate(board):
 
     return score
 
-
+   # MVV-LVA move ordering
 def move_value(board, move):
-    """
-    MVV-LVA move ordering for efficient alpha-beta pruning.
-    Prioritizes captures of valuable pieces with less valuable attackers.
-    """
+
     score = 0
 
     # Captures
@@ -334,12 +329,9 @@ def move_value(board, move):
 
     return score
 
-
+#Quiescence search
 def quiescence_search(board, alpha, beta, maximizing):
-    """
-    Quiescence search to avoid horizon effect.
-    Only searches tactically forcing moves (captures).
-    """
+
     stand_pat = evaluate(board)
 
     if maximizing:
@@ -347,7 +339,6 @@ def quiescence_search(board, alpha, beta, maximizing):
             return beta
         alpha = max(alpha, stand_pat)
 
-        # Only search captures
         captures = [m for m in board.legal_moves if board.is_capture(m)]
         captures.sort(key=lambda m: move_value(board, m), reverse=True)
 
@@ -380,14 +371,9 @@ def quiescence_search(board, alpha, beta, maximizing):
 
 
 def minimax(board, depth, alpha, beta, maximizing):
-    """
-    Minimax with alpha-beta pruning.
-    Uses move ordering to maximize pruning efficiency.
-    """
     if depth == 0:
         return quiescence_search(board, alpha, beta, maximizing)
 
-    # Generate and order moves
     moves = list(board.legal_moves)
     moves.sort(key=lambda m: move_value(board, m), reverse=True)
 
@@ -401,7 +387,7 @@ def minimax(board, depth, alpha, beta, maximizing):
             best_score = max(best_score, score)
             alpha = max(alpha, best_score)
             if beta <= alpha:
-                break  # Beta cutoff
+                break
         return best_score
     else:
         best_score = float('inf')
@@ -413,7 +399,7 @@ def minimax(board, depth, alpha, beta, maximizing):
             best_score = min(best_score, score)
             beta = min(beta, best_score)
             if beta <= alpha:
-                break  # Alpha cutoff
+                break
         return best_score
 
 
