@@ -17,9 +17,13 @@ All three files must be in the same directory:
     team_beta.py
 """
 
+import csv
+import datetime
+
 import tkinter as tk
 from tkinter import font as tkfont
 import chess
+import chess.pgn
 import importlib
 import random
 import sys
@@ -71,6 +75,17 @@ class ChessGUI:
         self.bot_black  = bot_black
         self.name_white = name_white  # human-readable team name for White
         self.name_black = name_black  # human-readable team name for Black
+
+        # ── PGN + logging ──
+        self.pgn_game = chess.pgn.Game()
+        self.pgn_game.headers["Event"] = "Visualized Bot Match"
+        self.pgn_game.headers["White"] = self.name_white
+        self.pgn_game.headers["Black"] = self.name_black
+        self.pgn_node = self.pgn_game
+        self.eval_history = []
+        self.game_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
         self.board      = chess.Board()
         self.last_move  = None
         self.move_log   = []
@@ -272,6 +287,9 @@ class ChessGUI:
 
         # ── Record SAN before pushing ─────────────────────────────────────────
         san = self.board.san(move)
+        # Add move to PGN
+        self.pgn_node = self.pgn_node.add_variation(move)
+
         if current_color == chess.WHITE:
             self.white_san_pending = san
         else:
@@ -282,6 +300,22 @@ class ChessGUI:
         # ── Update board state ────────────────────────────────────────────────
         self.last_move = move
         self.board.push(move)
+
+        # Record evaluation snapshot
+        try:
+            eval_score = self.bot_white.evaluate(self.board)
+        except Exception:
+            eval_score = None
+
+        self.eval_history.append({
+            "ply": len(self.board.move_stack),
+            "move_no": self.board.fullmove_number,
+            "side": "White" if current_color == chess.WHITE else "Black",
+            "san": san,
+            "uci": move.uci(),
+            "eval": eval_score,
+            "fen": self.board.fen(),
+        })
 
         # ── Eval ──────────────────────────────────────────────────────────────
         try:
@@ -336,6 +370,50 @@ class ChessGUI:
 
         self.root.after(0, self.status_var.set, msg + reason)
         self.root.after(0, self._draw_board)
+
+
+        self._save_match_files()
+        self._report_biggest_swing()
+
+
+    def _save_match_files(self):
+        base = f"match_{self.name_white}_vs_{self.name_black}_{self.game_id}"
+        pgn_path = base + ".pgn"
+        csv_path = base + "_evals.csv"
+
+        # Save PGN
+        with open(pgn_path, "w", encoding="utf-8") as f:
+            print(self.pgn_game, file=f, end="\n\n")
+
+        # Save eval history
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=["ply", "move_no", "side", "san", "uci", "eval", "fen"]
+            )
+            writer.writeheader()
+            writer.writerows(self.eval_history)
+
+        print(f"Saved {pgn_path}")
+        print(f"Saved {csv_path}")
+
+
+    def _report_biggest_swing(self):
+        best = None
+        for prev, curr in zip(self.eval_history, self.eval_history[1:]):
+            if prev["eval"] is None or curr["eval"] is None:
+                continue
+
+            delta = abs(curr["eval"] - prev["eval"])
+            if best is None or delta > best[0]:
+                best = (delta, prev, curr)
+
+        if best:
+            delta, prev, curr = best
+            print(
+                f"Biggest swing:\n"
+                f"Move {prev['move_no']} {prev['san']} -> {curr['san']} "
+                f"(Δ = {delta})")
 
 
 # ── Colour Draw Screen ────────────────────────────────────────────────────────
@@ -570,15 +648,15 @@ def main():
         sys.path.insert(0, script_dir)
 
     try:
-        team_alpha = importlib.import_module("team_ALGA_sample")
-        team_beta  = importlib.import_module("defensive_player")
+        team_alpha = importlib.import_module("team_alpha")
+        team_beta  = importlib.import_module("team_betaALGA")
     except ModuleNotFoundError as e:
         print(f"Error importing bot: {e}")
         print("Make sure team_alpha.py and team_beta.py are in the same folder as visualize.py")
         sys.exit(1)
 
     root = tk.Tk()
-    ColorDrawScreen(root, team_alpha, team_beta, "team_ALGA_sample", "defensive_player")
+    ColorDrawScreen(root, team_alpha, team_beta, "team_alpha", "team_betaALGA")
     root.mainloop()
 
 

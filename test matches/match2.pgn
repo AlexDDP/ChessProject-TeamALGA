@@ -1,0 +1,10 @@
+[Event "Visualized Bot Match"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "team_alpha"]
+[Black "team_betaALGA"]
+[Result "*"]
+
+1. Nf3 d5 2. Ne5 f6 3. Nf3 Nc6 4. Nc3 e5 5. e3 Nge7 6. Bb5 Qd7 7. O-O Kd8 8. Qe2 Qf5 9. Bxc6 bxc6 10. Nxd5 cxd5 11. Nxe5 fxe5 12. Kh1 Qe4 13. f3 Qf5 14. Qb5 d4 15. exd4 exd4 16. Qxf5 Bxf5 17. d3 Kc8 18. Bg5 Rb8 19. Rfe1 Bxd3 20. cxd3 Nd5 21. Re8+ Kb7 22. Rxb8+ Kxb8 23. Re1 Kb7 24. Re8 Nb4 25. Kg1 Nxd3 26. Kf1 h6 27. Bd2 c5 28. Ba5 h5 29. Bd2 h4 30. Bg5 Kb6 31. Rb8+ Kc7 32. Re8 Kb6 33. Rb8+ Kc7 34. Re8 Kb6 35. Rb8+ Ka6 36. Bd2 c4 37. Bg5 Nb4 38. Re8 c3 39. bxc3 dxc3 40. Re6+ Bd6 41. Rxd6+ Kb5 42. Be3 Re8 43. Bxa7 Ka4 44. Rd4 Ra8 45. Bb6 Ra6 46. Bc7 g5 47. Kf2 Ka3 48. Kf1 Rc6 49. Be5 c2 50. Rd3+ Nxd3 51. Bd6+ Rxd6 52. Ke2 c1=Q 53. f4 Qxf4 54. Kd1 Ne5+ 55. Kc2 Rd2+ 56. Kc1 Rxa2+ 57. Kd1 Qd2# *
+
